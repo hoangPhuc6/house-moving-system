@@ -23,10 +23,11 @@ public interface AuthMapper {
     // 2. Chuyển từ User sang RegisterResponse (tất cả thông tin id, email, fullName, phoneNumber đều từ User)
     RegisterResponse toRegisterResponse(User user);
 
-    // 3. Ghép thông tin từ CustomUserDetails, Token và Roles sang LoginResponse
+    // 3. Ghép thông tin từ CustomUserDetails, Token, RefreshToken và Roles sang LoginResponse
     @Mapping(target = "userId", source = "userDetails.id")
     @Mapping(target = "email", source = "userDetails.email")
     @Mapping(target = "fullName", source = "userDetails.fullName")
     @Mapping(target = "tokenType", constant = "Bearer")
-    LoginResponse toLoginResponse(CustomUserDetails userDetails, String accessToken, List<String> roles);
+    @Mapping(target = "refreshToken", source = "refreshToken")
+    LoginResponse toLoginResponse(CustomUserDetails userDetails, String accessToken, String refreshToken, List<String> roles);
 }

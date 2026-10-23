@@ -19,7 +19,9 @@ import com.housemoving.backend.dto.auth.LoginRequest;
 import com.housemoving.backend.dto.auth.LoginResponse;
 import com.housemoving.backend.dto.auth.RegisterRequest;
 import com.housemoving.backend.dto.auth.RegisterResponse;
+import com.housemoving.backend.dto.auth.TokenRefreshResponse;
 import com.housemoving.backend.entity.Customer;
+import com.housemoving.backend.entity.RefreshToken;
 import com.housemoving.backend.entity.Role;
 import com.housemoving.backend.entity.User;
 import com.housemoving.backend.mapper.AuthMapper;
@@ -40,6 +42,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional
     public RegisterResponse register(RegisterRequest req) {
@@ -76,6 +79,7 @@ public class AuthService {
 
     }
 
+    @Transactional
     public LoginResponse login(LoginRequest req) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
@@ -86,10 +90,40 @@ public class AuthService {
 
         String accessToken = jwtTokenProvider.generateToken(userDetails);
 
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin người dùng!"));
+
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
-        return authMapper.toLoginResponse(userDetails, accessToken, roles);
+        return authMapper.toLoginResponse(userDetails, accessToken, refreshToken.getToken(), roles);
+    }
+
+    @Transactional
+    public TokenRefreshResponse refreshToken(String reqRefreshToken) {
+        RefreshToken token = refreshTokenService.findByToken(reqRefreshToken);
+        token = refreshTokenService.verifyExpiration(token);
+
+        RefreshToken newRefreshToken = refreshTokenService.rotateRefreshToken(token);
+
+        User user = token.getUser();
+
+        CustomUserDetails userDetail = CustomUserDetails.fromUser(user);
+        String newAccessToken = jwtTokenProvider.generateToken(userDetail);
+
+        return TokenRefreshResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken.getToken())
+                .tokenType("Bearer")
+                .build();
+    }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        refreshTokenService.revokeToken(refreshToken);
+        SecurityContextHolder.clearContext();
     }
 }
