@@ -18,18 +18,20 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class CustomUserDetails implements UserDetails {
     private final Long id;
     private final String email;
+    private final String fullName;
     private final String password;
     private final boolean active;
     private final Collection<? extends GrantedAuthority> authorities;
 
     public static CustomUserDetails fromUser(com.housemoving.backend.entity.User user) {
         Set<SimpleGrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.getCode()))
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getCode()))
                 .collect(Collectors.toUnmodifiableSet());
 
         return CustomUserDetails.builder()
                 .id(user.getId())
                 .email(user.getEmail())
+                .fullName(user.getFullName())
                 .password(user.getPassword())
                 .active(Boolean.TRUE.equals(user.getIsActive()))
                 .authorities(authorities)
