@@ -28,9 +28,6 @@ public class Staff {
     @Column(name = "staff_code", unique = true, length = 30)
     private String staffCode;
 
-    @Column(name = "full_name", nullable = false)
-    private String fullName;
-
     @Column(name = "hire_date")
     private LocalDate hireDate;
 

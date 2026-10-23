@@ -27,17 +27,9 @@ public class Customer {
     @Column(name = "customer_code", unique = true, length = 30)
     private String customerCode;
 
-    @Column(name = "full_name", nullable = false)
-    private String fullName;
-
     @Column(name = "birthday")
     private LocalDate birthday;
 
-    @Column(name = "phone_number", length = 20)
-    private String phoneNumber;
-
-    @Column(name = "email")
-    private String email;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
