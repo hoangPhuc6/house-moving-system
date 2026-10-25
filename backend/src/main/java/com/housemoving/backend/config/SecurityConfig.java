@@ -1,8 +1,10 @@
 package com.housemoving.backend.config;
 
 import com.housemoving.backend.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -19,6 +21,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Configuration
@@ -51,12 +54,23 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 // 3. Stateless: Không dùng Session HTTP truyền thống
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // 4. Phân quyền endpoint
+                // 4. Xử lý lỗi xác thực thống nhất theo chuẩn JSON ApiResponse
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write(
+                                "{\"status\":\"error\",\"message\":\"Vui lòng đăng nhập để tiếp tục\",\"data\":null,\"errorCode\":\"UNAUTHORIZED\"}"
+                            );
+                        }))
+                // 5. Phân quyền endpoint
                 .authorizeHttpRequests(auth -> auth
-                        // Cho phép truy cập tự do vào các API Auth, Swagger và file tĩnh
+                        // Endpoint lấy thông tin tài khoản hiện tại yêu cầu xác thực
+                        .requestMatchers("/api/v1/auth/me").authenticated()
+                        // Cho phép truy cập tự do vào các API Auth còn lại, Swagger và file tĩnh
                         .requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        // Tạm thời cho phép tất cả các API khác trong lúc đang dựng Base (sau này sẽ
-                        // siết lại bằng .authenticated())
+                        // Tạm thời cho phép tất cả các API khác trong lúc đang dựng Base
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

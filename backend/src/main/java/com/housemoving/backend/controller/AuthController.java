@@ -1,6 +1,9 @@
 package com.housemoving.backend.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,7 +15,9 @@ import com.housemoving.backend.dto.auth.RefreshTokenRequest;
 import com.housemoving.backend.dto.auth.RegisterRequest;
 import com.housemoving.backend.dto.auth.RegisterResponse;
 import com.housemoving.backend.dto.auth.TokenRefreshResponse;
+import com.housemoving.backend.dto.auth.UserResponse;
 import com.housemoving.backend.dto.common.ApiResponse;
+import com.housemoving.backend.security.CustomUserDetails;
 import com.housemoving.backend.service.AuthService;
 
 import jakarta.validation.Valid;
@@ -52,5 +57,16 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> logout(@Valid @RequestBody RefreshTokenRequest request) {
         authService.logout(request.getRefreshToken());
         return ApiResponse.success("Đăng xuất thành công", "Đã thu hồi token và đăng xuất thành công");
+    }
+
+    // 5. API Lấy thông tin tài khoản hiện tại (Me)
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> getMe(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        if (userDetails == null) {
+            throw new BadCredentialsException("Người dùng chưa được xác thực hoặc phiên đăng nhập đã hết hạn");
+        }
+        UserResponse response = authService.getCurrentUser(userDetails.getId());
+        return ApiResponse.success(response, "Lấy thông tin người dùng thành công");
     }
 }

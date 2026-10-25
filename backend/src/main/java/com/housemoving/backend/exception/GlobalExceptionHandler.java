@@ -33,10 +33,13 @@ public class GlobalExceptionHandler {
         return ApiResponse.error(HttpStatus.BAD_REQUEST, "Dữ liệu không hợp lệ", errors, "VALIDATION_FAILED");
     }
 
-    // 3. Bắt lỗi sai thông tin đăng nhập (401 Unauthorized)
+    // 3. Bắt lỗi sai thông tin đăng nhập hoặc chưa xác thực (401 Unauthorized)
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Object>> handleBadCredentials(BadCredentialsException ex) {
-        return ApiResponse.error(HttpStatus.UNAUTHORIZED, "Tài khoản hoặc mật khẩu không chính xác", "UNAUTHORIZED");
+        String message = (ex.getMessage() != null && !ex.getMessage().isBlank())
+                ? ex.getMessage()
+                : "Tài khoản hoặc mật khẩu không chính xác";
+        return ApiResponse.error(HttpStatus.UNAUTHORIZED, message, "UNAUTHORIZED");
     }
 
     // 4. Bắt lỗi không có quyền truy cập API (403 Forbidden)
