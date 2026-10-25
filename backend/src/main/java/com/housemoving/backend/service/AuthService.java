@@ -20,10 +20,12 @@ import com.housemoving.backend.dto.auth.LoginResponse;
 import com.housemoving.backend.dto.auth.RegisterRequest;
 import com.housemoving.backend.dto.auth.RegisterResponse;
 import com.housemoving.backend.dto.auth.TokenRefreshResponse;
+import com.housemoving.backend.dto.auth.UserResponse;
 import com.housemoving.backend.entity.Customer;
 import com.housemoving.backend.entity.RefreshToken;
 import com.housemoving.backend.entity.Role;
 import com.housemoving.backend.entity.User;
+import com.housemoving.backend.exception.ResourceNotFoundException;
 import com.housemoving.backend.mapper.AuthMapper;
 import com.housemoving.backend.repository.RoleRepository;
 import com.housemoving.backend.repository.UserRepository;
@@ -125,5 +127,12 @@ public class AuthService {
     public void logout(String refreshToken) {
         refreshTokenService.revokeToken(refreshToken);
         SecurityContextHolder.clearContext();
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin người dùng với ID: " + userId));
+        return authMapper.toUserResponse(user);
     }
 }
